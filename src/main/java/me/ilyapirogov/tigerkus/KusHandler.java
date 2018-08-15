@@ -3,6 +3,7 @@ package me.ilyapirogov.tigerkus;
 import com.google.common.base.Predicate;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
+import net.minecraft.entity.ai.EntityAIFindEntityNearestPlayer;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITasks;
 import net.minecraft.entity.monster.EntityMob;
@@ -21,6 +22,39 @@ public class KusHandler {
         }
     };
 
+    private static void TryToPatchPredicate(Object obj) throws NoSuchFieldException, IllegalAccessException {
+        // this is a black magic! \O/ ==---* vzhuh
+        Field targetEntitySelector = null;
+        Class klass = obj.getClass();
+
+        for (Field declaredField : klass.getDeclaredFields()) {
+            if (declaredField.getType().getSimpleName().equals("Predicate")) {
+                targetEntitySelector = declaredField;
+                break;
+            }
+        }
+
+        if (targetEntitySelector == null) {
+            return;
+        }
+
+        targetEntitySelector.setAccessible(true);
+
+        Field modifiersField = Field.class.getDeclaredField("modifiers");
+        modifiersField.setAccessible(true);
+        modifiersField.setInt(targetEntitySelector, targetEntitySelector.getModifiers() & ~Modifier.FINAL);
+
+        Predicate<Entity> predicate = (Predicate<Entity>) targetEntitySelector.get(obj);
+        targetEntitySelector.set(obj, new Predicate<Entity>() {
+            public boolean apply(@Nullable Entity entity) {
+                if (isTiger.apply(entity)) {
+                    return false;
+                }
+                return predicate.apply(entity);
+            }
+        });
+    }
+
     @SubscribeEvent
     public void onEntityJoin(EntityJoinWorldEvent event) {
         Entity entity = event.getEntity();
@@ -28,43 +62,16 @@ public class KusHandler {
             EntityMob mob = (EntityMob) entity;
 
             for (EntityAITasks.EntityAITaskEntry taskEntry : mob.targetTasks.taskEntries) {
-                if (taskEntry.action instanceof EntityAINearestAttackableTarget<?>) {
-                    EntityAINearestAttackableTarget ai = (EntityAINearestAttackableTarget) taskEntry.action;
+                try {
 
-                    // black magic starts here
-                    try {
-                        Class klass = ai.getClass();
-                        Field[] fields = klass.getDeclaredFields();
-                        if (fields.length == 0) {
-                            klass = klass.getSuperclass();
-                            fields = klass.getDeclaredFields();
-                        }
-
-                        if (fields.length < 4) {
-                            continue;
-                        }
-
-                        Field targetEntitySelector = fields[3];
-                        targetEntitySelector.setAccessible(true);
-
-                        Field modifiersField = Field.class.getDeclaredField("modifiers");
-                        modifiersField.setAccessible(true);
-                        modifiersField.setInt(targetEntitySelector, targetEntitySelector.getModifiers() & ~Modifier.FINAL);
-
-                        Predicate<Entity> predicate = (Predicate<Entity>) targetEntitySelector.get(ai);
-                        targetEntitySelector.set(ai, new Predicate<Entity>() {
-                            public boolean apply(@Nullable Entity entity) {
-                                if (isTiger.apply(entity)) {
-                                    return false;
-                                }
-                                return predicate.apply(entity);
-                            }
-                        });
-
-                    } catch (Exception ex) {
-                        TigerKus.logger.error(ex);
-                        TigerKus.logger.warn("Tiger can't do kus' for {} :(", mob.getDisplayName());
+                    if (taskEntry.action instanceof EntityAINearestAttackableTarget<?>
+                            || taskEntry.action instanceof EntityAIFindEntityNearestPlayer) {
+                        TryToPatchPredicate(taskEntry);
                     }
+
+                } catch (Exception ex) {
+                    TigerKus.logger.error(ex);
+                    TigerKus.logger.warn("Tiger can't do kus' for {} :(", mob.getDisplayName());
                 }
             }
 
