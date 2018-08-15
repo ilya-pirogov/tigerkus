@@ -2,11 +2,9 @@ package me.ilyapirogov.tigerkus;
 
 import com.google.common.base.Predicate;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
-import net.minecraft.entity.ai.EntityAIAvoidEntity;
-import net.minecraft.entity.ai.EntityAIFindEntityNearestPlayer;
-import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
-import net.minecraft.entity.ai.EntityAITasks;
+import net.minecraft.entity.ai.*;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
@@ -16,6 +14,8 @@ import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
 
 public class KusHandler {
     private static Predicate<Entity> isTiger = new Predicate<Entity>() {
@@ -24,10 +24,9 @@ public class KusHandler {
         }
     };
 
-    private static void TryToPatchPredicate(Object obj) throws NoSuchFieldException, IllegalAccessException {
+    private static void TryToPatchPredicate(Object obj, java.lang.Class<?> klass) throws NoSuchFieldException, IllegalAccessException {
         // this is a black magic! \O/ ==---* vzhuh
         Field targetEntitySelector = null;
-        Class klass = obj.getClass();
 
         for (Field declaredField : klass.getDeclaredFields()) {
             if (declaredField.getType().getSimpleName().equals("Predicate")) {
@@ -57,18 +56,56 @@ public class KusHandler {
         });
     }
 
+    private static void TryToReplaceKusAI(EntityAITasks.EntityAITaskEntry taskEntry, EntityLiving mob) throws IllegalAccessException {
+        Class<?> klass = taskEntry.action.getClass();
+        Field[] fields = klass.getDeclaredFields();
+        boolean entityCallsForHelp = false;
+        Class<?>[] excludedReinforcementTypes = new Class[]{};
+        int priority = taskEntry.priority;
+
+        if (fields.length < 3) {
+            return;
+        }
+
+        for (Field field : fields) {
+            field.setAccessible(true);
+            if (field.getType().getSimpleName().equals("boolean")) {
+                entityCallsForHelp = (boolean) field.get(taskEntry.action);
+            }
+
+            if (field.getType().getSimpleName().equals("Class[]")) {
+                excludedReinforcementTypes = (Class<?>[]) field.get(taskEntry.action);
+            }
+        }
+
+        EntityAIDoesntKusTarget newAi = new EntityAIDoesntKusTarget((EntityCreature) mob, isTiger, entityCallsForHelp, excludedReinforcementTypes);
+
+        mob.targetTasks.removeTask(taskEntry.action);
+        mob.targetTasks.addTask(priority, newAi);
+    }
+
     @SubscribeEvent
     public void onEntityJoin(EntityJoinWorldEvent event) {
         Entity entity = event.getEntity();
         if (entity instanceof IMob && entity instanceof EntityLiving) {
             EntityLiving mob = (EntityLiving) entity;
 
-            for (EntityAITasks.EntityAITaskEntry taskEntry : mob.targetTasks.taskEntries) {
+            List<EntityAITasks.EntityAITaskEntry> entries = new ArrayList<>(mob.targetTasks.taskEntries);
+
+            for (EntityAITasks.EntityAITaskEntry taskEntry : entries) {
                 try {
 
                     if (taskEntry.action instanceof EntityAINearestAttackableTarget<?>
                             || taskEntry.action instanceof EntityAIFindEntityNearestPlayer) {
-                        TryToPatchPredicate(taskEntry.action);
+                        TryToPatchPredicate(taskEntry.action, taskEntry.action.getClass());
+                    }
+
+                    if (taskEntry.action.getClass().getName().endsWith("AISpiderTarget")) {
+                        TryToPatchPredicate(taskEntry.action, taskEntry.action.getClass().getSuperclass());
+                    }
+
+                    if (taskEntry.action instanceof EntityAIHurtByTarget) {
+                        TryToReplaceKusAI(taskEntry, mob);
                     }
 
                 } catch (Exception ex) {
@@ -80,7 +117,7 @@ public class KusHandler {
             if (TigerKus.fearEveryone && mob instanceof EntityMob) {
                 mob.tasks.addTask(0,
                         new EntityAIAvoidEntity<>(
-                                (EntityMob)mob,
+                                (EntityMob) mob,
                                 EntityPlayer.class,
                                 isTiger,
                                 TigerKus.avoidDistance,
