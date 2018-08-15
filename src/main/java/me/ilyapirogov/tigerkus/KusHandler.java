@@ -2,11 +2,13 @@ package me.ilyapirogov.tigerkus;
 
 import com.google.common.base.Predicate;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.ai.EntityAIAvoidEntity;
 import net.minecraft.entity.ai.EntityAIFindEntityNearestPlayer;
 import net.minecraft.entity.ai.EntityAINearestAttackableTarget;
 import net.minecraft.entity.ai.EntityAITasks;
 import net.minecraft.entity.monster.EntityMob;
+import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
 import net.minecraftforge.event.entity.EntityJoinWorldEvent;
 import net.minecraftforge.fml.common.eventhandler.SubscribeEvent;
@@ -58,15 +60,15 @@ public class KusHandler {
     @SubscribeEvent
     public void onEntityJoin(EntityJoinWorldEvent event) {
         Entity entity = event.getEntity();
-        if (entity instanceof EntityMob) {
-            EntityMob mob = (EntityMob) entity;
+        if (entity instanceof IMob && entity instanceof EntityLiving) {
+            EntityLiving mob = (EntityLiving) entity;
 
             for (EntityAITasks.EntityAITaskEntry taskEntry : mob.targetTasks.taskEntries) {
                 try {
 
                     if (taskEntry.action instanceof EntityAINearestAttackableTarget<?>
                             || taskEntry.action instanceof EntityAIFindEntityNearestPlayer) {
-                        TryToPatchPredicate(taskEntry);
+                        TryToPatchPredicate(taskEntry.action);
                     }
 
                 } catch (Exception ex) {
@@ -75,10 +77,10 @@ public class KusHandler {
                 }
             }
 
-            if (TigerKus.fearEveryone) {
+            if (TigerKus.fearEveryone && mob instanceof EntityMob) {
                 mob.tasks.addTask(0,
                         new EntityAIAvoidEntity<>(
-                                mob,
+                                (EntityMob)mob,
                                 EntityPlayer.class,
                                 isTiger,
                                 TigerKus.avoidDistance,
