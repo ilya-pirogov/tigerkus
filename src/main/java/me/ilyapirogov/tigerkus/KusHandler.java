@@ -5,6 +5,7 @@ import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCreature;
 import net.minecraft.entity.EntityLiving;
 import net.minecraft.entity.ai.*;
+import net.minecraft.entity.monster.EntityEnderman;
 import net.minecraft.entity.monster.EntityMob;
 import net.minecraft.entity.monster.IMob;
 import net.minecraft.entity.player.EntityPlayer;
@@ -84,6 +85,15 @@ public class KusHandler {
         mob.targetTasks.addTask(priority, newAi);
     }
 
+    private static void TryToReplaceEndermanAI(EntityAITasks.EntityAITaskEntry taskEntry, EntityEnderman mob) {
+        int priority = taskEntry.priority;
+
+        EndermanAIFindPlayer newAi = new EndermanAIFindPlayer(mob, isTiger);
+
+        mob.targetTasks.removeTask(taskEntry.action);
+        mob.targetTasks.addTask(priority, newAi);
+    }
+
     @SubscribeEvent
     public void onEntityJoin(EntityJoinWorldEvent event) {
         Entity entity = event.getEntity();
@@ -94,20 +104,26 @@ public class KusHandler {
 
             for (EntityAITasks.EntityAITaskEntry taskEntry : entries) {
                 try {
+                    String name = taskEntry.action.getClass().getName();
 
                     if (taskEntry.action instanceof EntityAINearestAttackableTarget<?>
                             || taskEntry.action instanceof EntityAIFindEntityNearestPlayer) {
                         TryToPatchPredicate(taskEntry.action, taskEntry.action.getClass());
                     }
 
-                    if (taskEntry.action.getClass().getName().endsWith("AISpiderTarget")) {
-                        TryToPatchPredicate(taskEntry.action, taskEntry.action.getClass().getSuperclass());
-                    }
-
                     if (taskEntry.action instanceof EntityAIHurtByTarget) {
                         TryToReplaceKusAI(taskEntry, mob);
+                        continue;
                     }
 
+                    if (mob instanceof EntityEnderman && name.endsWith("AIFindPlayer")) {
+                        TryToReplaceEndermanAI(taskEntry, (EntityEnderman)mob);
+                        continue;
+                    }
+
+                    if (name.endsWith("AISpiderTarget") || name.endsWith("AIFindPlayer") || name.endsWith("AITargetAggressor")) {
+                        TryToPatchPredicate(taskEntry.action, taskEntry.action.getClass().getSuperclass());
+                    }
                 } catch (Exception ex) {
                     TigerKus.logger.error(ex);
                     TigerKus.logger.warn("Tiger can't do kus' for {} :(", mob.getDisplayName());
