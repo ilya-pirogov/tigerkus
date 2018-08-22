@@ -15,10 +15,7 @@ import java.util.UUID;
 public class TigerKus {
     public static final String MODID = "tigerkus";
     public static final String NAME = "Tiger Kus'";
-    public static final String VERSION = "1.2";
-
-    @Mod.Instance(TigerKus.MODID)
-    public static TigerKus instance;
+    public static final String VERSION = "1.3";
 
     public static Logger logger;
     private Configuration config;
