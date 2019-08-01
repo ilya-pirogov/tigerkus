@@ -23,11 +23,8 @@ public class KusHandler {
         EntityLivingBase entity = ev.getEntityLiving();
         EntityLivingBase target = ev.getTarget();
 
-        if (target != null && isTiger.apply(target)) {
-            entity.setRevengeTarget(null);
-            if (entity instanceof EntityLiving) {
-                ((EntityLiving) entity).setAttackTarget(null);
-            }
+        if (target != null && entity instanceof EntityLiving && isTiger.apply(target)) {
+            ((EntityLiving) entity).setAttackTarget(null);
         }
     }
 

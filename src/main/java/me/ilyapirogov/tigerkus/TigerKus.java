@@ -21,7 +21,7 @@ import java.util.UUID;
 public class TigerKus {
     public static final String MODID = "tigerkus";
     public static final String NAME = "Tiger Kus'";
-    public static final String VERSION = "1.4";
+    public static final String VERSION = "1.5";
     public static final String PERM_ADD = "tigerkus.list.add";
     public static final String PERM_REMOVE = "tigerkus.list.remove";
     public static final String CONFIG_GENERAL = "general";
