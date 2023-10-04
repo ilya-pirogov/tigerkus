@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "tigerkus",
+  "version": "${version}",
+
+  "name": "tigerkus",
+  "description": "",
+  "authors": [],
+  "contact": {},
+
+  "license": "All Rights Reserved",
+  "icon": "icon.png",
+
+  "environment": "*",
+  "entrypoints": {},
+  "mixins": [
+    "tigerkus.mixins.json",
+    "tigerkus-common.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.22",
+    "minecraft": ">=1.20.2"
+  }
+}
