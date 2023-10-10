@@ -1,0 +1,16 @@
+{
+  "Tiger %s has been added to the list!": "Tiger %s has been added to the list!",
+  "%s is not Tiger anymore :(": "%s is not Tiger anymore :(",
+  "Config has been reloaded": "Config has been reloaded",
+
+  "text.autoconfig.tigerkus.category.avoiding": "Avoiding",
+  "text.autoconfig.tigerkus.category.repulsion": "Repulsion",
+  "text.autoconfig.tigerkus.category.default": "General",
+  "text.autoconfig.tigerkus.option.avoiding.enabled": "Enable Avoiding",
+  "text.autoconfig.tigerkus.option.avoiding.maxDist": "Maximum Distance",
+  "text.autoconfig.tigerkus.option.avoiding.walkSpeedModifier": "Walk Speed Modifier",
+  "text.autoconfig.tigerkus.option.avoiding.sprintSpeedModifier": "Sprint Speed Modifier",
+  "text.autoconfig.tigerkus.option.repulsion.enabled": "Enable Repulsion",
+  "text.autoconfig.tigerkus.option.repulsion.strength": "Repulsion Strength",
+  "text.autoconfig.tigerkus.option.uuids": "List of Tiger UUIDs"
+}

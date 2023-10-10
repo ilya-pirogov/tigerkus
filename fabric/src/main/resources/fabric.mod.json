@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "id": "tigerkus",
+  "version": "${version}",
+
+  "name": "TigerKus",
+  "description": "Very simple mod which doesn't allow to hurt Tigers",
+  "authors": ["Ilya Pirogov"],
+  "contact": {},
+
+  "license": "MIT",
+  "icon": "icon.png",
+
+  "environment": "server",
+  "entrypoints": {},
+  "mixins": [
+    "tigerkus.mixins.json",
+    "tigerkus-common.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.14.22",
+    "minecraft": ">=1.19.4"
+  }
+}
